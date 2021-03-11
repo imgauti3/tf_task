@@ -1,28 +1,27 @@
-- become: yes
-  hosts: all
-  name: apache-install
+---
+- hosts: localhost
+  gather_facts: no
   tasks:
-    - name: Add the user 'sammy' and add it to 'sudo'
-      user:
-        name: sammy
-        group: sudo
-    - name: Add SSH key to 'sammy'
-      authorized_key:
-        user: sammy
-        state: present
-        key: "{{ lookup('file', pub_key) }}"
-    - name: Update all packages
-      apt:
-        upgrade: dist
-        update_cache: yes
-        cache_valid_time: 3600
-    - name: Install apache2
-      apt: name=apache2 update_cache=yes state=latest
-    - name: Enable mod_rewrite
-      apache2_module: name=rewrite state=present
-      notify:
-        - Restart apache2
+  - name:
+    pip:
+      name: boto3
+      state: present
 
-  handlers:
-    - name: Restart apache2
-      service: name=apache2 state=restarted
+  - name: install apache
+    apt:
+      name: apache2
+      state: latest
+    become: yes
+    
+  - name: Copy html file
+    ansible.builtin.copy:
+      src: ./welcome.html
+      dest: /var/www/html/welcome.html
+      
+  - name: apache2 listen on port 8900 ports.conf
+    lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen 80" line="Listen 8900" state=present
+      
+  - name: restart apache2
+    service: 
+      name: apache2
+      state: restarted
